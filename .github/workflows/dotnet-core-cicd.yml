@@ -1,0 +1,54 @@
+name: 03-Dotnet-Core-CICD
+env:
+  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
+  DOTNET_VERSION: '5'                 # set this to the .NET Core version to use
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .Net Core
+        uses: actions/setup-dotnet@v5.0.1
+        with:
+          dotnet-version: 8.0.x
+      - name: Build Project
+        run: dotnet build
+      - name: Test Project
+        run: dotnet test
+      - name: Publish Project
+        run: dotnet publish -c Release -o ./publish
+      - name: Create ZIP package
+        run: |
+          cd publish
+          zip -r ../dotnet-app.zip .
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: dotnet-app-build
+          path: dotnet-app.zip
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: prod
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v7.0.0
+        with:
+          name: dotnet-app-build
+          # ../work/mvc-project/.../artifact/dotnet-app.zip
+          path: ./artifact
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with: 
+          app-name: mvc-project
+          publish-profile: ${{ secrets.MY_AZURE_PUBLISH_PROFILE }}
+          package: "./artifact/dotnet-app.zip"
+        
+        
+        
+      
