@@ -1,0 +1,54 @@
+# Build results
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Visual Studio files
+.vs/
+.vscode/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+# Uncomment if you have tasks that create the 'project.lock.json' file
+# project.lock.json
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Dotnet watch
+**/Properties/launchSettings.json
+
+# Publish results
+publish/
+*.Publish.xml
+
+# Rider
+.idea/
+*.sln.iml
+
+# Logs
+*.log
+
+# Test results
+TestResults/
+*.coverage
+*.coveragexml
+*.testresults
+
+# Others
+*.dbmdl
+*.bak
+*.sql
+*.sqlite
