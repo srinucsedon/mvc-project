@@ -46,6 +46,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with: 
           app-name: mvc-project
+          publish-profile: ${{ secrets.MY_AZURE_PUBLISH_PROFILE }}
           package: "./artifact/dotnet-app.zip"
         
         
