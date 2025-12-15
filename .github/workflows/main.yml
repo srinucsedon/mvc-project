@@ -1,1 +1,131 @@
 
+name: Generate Smiley Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      size:
+        description: "Image size (pixels, square)"
+        default: "512"
+        required: true
+        type: string
+      face_color:
+        description: "Face color (e.g., yellow, #FFD54F)"
+        default: "yellow"
+        required: true
+        type: string
+      eye_color:
+        description: "Eye color"
+        default: "black"
+        required: true
+        type: string
+      mouth_color:
+        description: "Mouth color"
+        default: "black"
+        required: true
+        type: string
+      background:
+        description: "Background color (e.g., white, transparent)"
+        default: "white"
+        required: true
+        type: string
+
+jobs:
+  build-smiley:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow
+
+      - name: Generate smiley script
+        run: |
+          cat > generate_smiley.py << 'PYCODE'
+          from PIL import Image, ImageDraw
+          import os
+
+          # Inputs from workflow_dispatch
+          size = int(os.getenv("INPUT_SIZE", "512"))
+          face_color = os.getenv("INPUT_FACE_COLOR", "yellow")
+          eye_color = os.getenv("INPUT_EYE_COLOR", "black")
+          mouth_color = os.getenv("INPUT_MOUTH_COLOR", "black")
+          background = os.getenv("INPUT_BACKGROUND", "white")
+
+          # Create canvas
+          if background.lower() == "transparent":
+              img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+          else:
+              img = Image.new("RGBA", (size, size), background)
+
+          draw = ImageDraw.Draw(img)
+
+          # Face circle
+          margin = int(size * 0.05)
+          face_bbox = [margin, margin, size - margin, size - margin]
+          draw.ellipse(face_bbox, fill=face_color)
+
+          # Eyes
+          eye_radius = int(size * 0.05)
+          eye_offset_x = int(size * 0.18)
+          eye_offset_y = int(size * 0.25)
+          center_left = (size // 2 - eye_offset_x, size // 2 - eye_offset_y)
+          center_right = (size // 2 + eye_offset_x, size // 2 - eye_offset_y)
+
+          def circle(center, r, fill):
+              x, y = center
+              draw.ellipse([x - r, y - r, x + r, y + r], fill=fill)
+
+          circle(center_left, eye_radius, eye_color)
+          circle(center_right, eye_radius, eye_color)
+
+          # Smile (arc)
+          mouth_radius = int(size * 0.30)
+          mouth_center = (size // 2, size // 2 + int(size * 0.10))
+          thickness = int(size * 0.04)
+
+          # Draw an arc by stroking multiple concentric arcs for thickness
+          for t in range(thickness):
+              bbox = [
+                  mouth_center[0] - mouth_radius + t,
+                  mouth_center[1] - mouth_radius + t,
+                  mouth_center[0] + mouth_radius - t,
+                  mouth_center[1] + mouth_radius - t
+              ]
+              # 200 to 340 degrees gives a smile
+              draw.arc(bbox, start=200, end=340, fill=mouth_color, width=2)
+
+          # Output
+          out_dir = "output"
+          os.makedirs(out_dir, exist_ok=True)
+          fmt = "PNG" if background.lower() != "transparent" else "PNG"
+          out_path = os.path.join(out_dir, "smiley.png")
+          img.save(out_path, fmt)
+          print(f"Saved: {out_path}")
+          PYCODE
+
+      - name: Run generator
+        env:
+          INPUT_SIZE: ${{ github.event.inputs.size }}
+          INPUT_FACE_COLOR: ${{ github.event.inputs.face_color }}
+          INPUT_EYE_COLOR: ${{ github.event.inputs.eye_color }}
+          INPUT_MOUTH_COLOR: ${{ github.event.inputs.mouth_color }}
+          INPUT_BACKGROUND: ${{ github.event.inputs.background }}
+        run: python generate_smiley.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smiley-image
+          path: output/smiley.png
+          if-no-files-found: error
+
